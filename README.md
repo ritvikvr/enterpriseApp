@@ -216,7 +216,7 @@ This project is open source and available under the MIT License. See LICENSE fil
 
 ## Author
 
-**Ritvik Rajeev** - [@ritvikvr](https://github.com/ritvikvr)
+**Ritvik** - [@ritvikvr](https://github.com/ritvikvr)
 
 ## Support
 
