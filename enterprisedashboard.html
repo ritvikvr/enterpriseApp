@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Architecture Strategy Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fdfbf7; color: #1f2937; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin: 0 auto; height: 300px; max-height: 400px; }
+        .nav-item.active { border-bottom: 2px solid #0f766e; color: #0f766e !important; font-weight: 600; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .pipeline-step { position: relative; }
+        .pipeline-connector::after { content: ''; position: absolute; top: 50%; left: 100%; width: 2rem; height: 2px; background-color: #e5e7eb; transform: translateY(-50%); z-index: 0; }
+        .pipeline-step:last-child .pipeline-connector::after { display: none; }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+    <!-- Chosen Palette: "Organic Corporate" - Warm neutral background (#fdfbf7) with professional Teal (#0f766e) and Slate (#1f2937) accents for a stable, high-tech feel. -->
+    <!-- Application Structure Plan: Dashboard approach with tabbed navigation. 
+         1. Overview: Executive summary and key targets.
+         2. Architecture: Interactive breakdown of Microservices, Containers, and DB strategies.
+         3. CI/CD Pipeline: A visual process flow showing the automation stages.
+         4. Quality & Ops: Metrics for testing coverage, security, and monitoring.
+         Why: This structure separates concerns (Dev vs. Ops vs. Arch) allowing different stakeholders to find relevant info quickly. -->
+    <!-- Visualization & Content Choices:
+         - Charts: Donut for Test Coverage (Goal: Inform), Bar chart for Tech Stack Distribution (Goal: Compare).
+         - Pipeline: Flexbox-based process flow with hover interactions (Goal: Change/Explain).
+         - Cards: Grid layout for Architectural components (Goal: Organize).
+         - Justification: Chart.js handled quantitative metrics well; CSS layout handles the structural flows without needing SVG. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded bg-teal-700 text-white font-bold text-lg mr-3">E</div>
+                    <span class="font-bold text-xl tracking-tight text-slate-800">Enterprise<span class="text-teal-700">Tech</span> Strategy</span>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <button onclick="navTo('overview')" class="nav-item active px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700" id="nav-overview">Overview</button>
+                    <button onclick="navTo('architecture')" class="nav-item px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700" id="nav-architecture">Architecture</button>
+                    <button onclick="navTo('pipeline')" class="nav-item px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700" id="nav-pipeline">CI/CD Pipeline</button>
+                    <button onclick="navTo('quality')" class="nav-item px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700" id="nav-quality">Quality & Ops</button>
+                </nav>
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button onclick="toggleMobileMenu()" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <span class="text-2xl">☰</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-gray-200">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <button onclick="navTo('overview')" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Overview</button>
+                <button onclick="navTo('architecture')" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Architecture</button>
+                <button onclick="navTo('pipeline')" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">CI/CD Pipeline</button>
+                <button onclick="navTo('quality')" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Quality & Ops</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- SECTION: OVERVIEW -->
+        <div id="overview" class="section-content animate-fade-in">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Project Strategic Plan</h1>
+                <p class="mt-2 text-lg text-gray-600 max-w-3xl">
+                    This interactive dashboard outlines the roadmap for building a production-ready enterprise application. 
+                    Explore the sections to understand our microservices approach, automated pipelines, and rigorous quality standards.
+                </p>
+            </div>
+
+            <!-- Key Metrics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-100 p-5 card-hover transition-all">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-teal-100 rounded-md p-3">
+                            <span class="text-2xl">⚙️</span>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Architecture</dt>
+                                <dd class="text-lg font-medium text-gray-900">Microservices</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-100 p-5 card-hover transition-all">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                            <span class="text-2xl">🚀</span>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Deployment</dt>
+                                <dd class="text-lg font-medium text-gray-900">K8s & Docker</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-100 p-5 card-hover transition-all">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+                            <span class="text-2xl">🛡️</span>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Test Coverage</dt>
+                                <dd class="text-lg font-medium text-gray-900">&gt; 85% Target</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-100 p-5 card-hover transition-all">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                            <span class="text-2xl">📄</span>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Documentation</dt>
+                                <dd class="text-lg font-medium text-gray-900">OpenAPI/Swagger</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro/Context Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white shadow rounded-lg p-6 border border-gray-100">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Core Objectives Breakdown</h2>
+                    <p class="text-gray-600 mb-4">
+                        The proposed system is designed to meet high enterprise standards. We prioritize scalability through microservices, reliability through rigorous automated testing, and observability through comprehensive monitoring.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="overviewChart"></canvas>
+                    </div>
+                    <p class="text-sm text-center text-gray-500 mt-2">Relative effort allocation across project phases.</p>
+                </div>
+
+                <div class="bg-teal-50 shadow rounded-lg p-6 border border-teal-100">
+                    <h2 class="text-xl font-semibold text-teal-800 mb-4">Action Items</h2>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-teal-500">✓</span>
+                            <span class="ml-3 text-sm text-gray-700">Design Microservices Schema</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-teal-500">✓</span>
+                            <span class="ml-3 text-sm text-gray-700">Setup Git & CI Environment</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-gray-400">○</span>
+                            <span class="ml-3 text-sm text-gray-700">Implement Docker Containers</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-gray-400">○</span>
+                            <span class="ml-3 text-sm text-gray-700">Configure Kubernetes Cluster</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-5 w-5 text-gray-400">○</span>
+                            <span class="ml-3 text-sm text-gray-700">Write OpenAPI Specs</span>
+                        </li>
+                    </ul>
+                    <div class="mt-6 pt-6 border-t border-teal-200">
+                        <button onclick="navTo('architecture')" class="w-full bg-teal-600 text-white px-4 py-2 rounded shadow hover:bg-teal-700 transition">View Architecture Details</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: ARCHITECTURE -->
+        <div id="architecture" class="section-content hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">Architecture & Tech Stack</h2>
+                <p class="mt-2 text-gray-600">
+                    A decoupled microservices architecture ensures independent scalability and easier maintenance. 
+                    This section details the core components and their roles in the ecosystem.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Stack Selection Grid -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Microservices Card -->
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500 cursor-pointer hover:bg-gray-50 transition" onclick="updateArchDetail('microservices')">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-lg text-gray-800">Microservices</h3>
+                            <span class="text-2xl">🧩</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Decoupled services for modular development and scaling.</p>
+                    </div>
+
+                    <!-- Containerization Card -->
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-400 cursor-pointer hover:bg-gray-50 transition" onclick="updateArchDetail('docker')">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-lg text-gray-800">Docker & K8s</h3>
+                            <span class="text-2xl">🐳</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Containerized deployment with Kubernetes orchestration.</p>
+                    </div>
+
+                    <!-- Database Card -->
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-indigo-500 cursor-pointer hover:bg-gray-50 transition" onclick="updateArchDetail('database')">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-lg text-gray-800">Data Management</h3>
+                            <span class="text-2xl">🗄️</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Migrations, versioning, and persistence strategies.</p>
+                    </div>
+
+                    <!-- Security Card -->
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-red-500 cursor-pointer hover:bg-gray-50 transition" onclick="updateArchDetail('security')">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-lg text-gray-800">Security Layer</h3>
+                            <span class="text-2xl">🔒</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Auth implementation and best practice enforcement.</p>
+                    </div>
+                </div>
+
+                <!-- Dynamic Detail Panel -->
+                <div class="bg-slate-800 text-white p-6 rounded-lg shadow-lg flex flex-col justify-center">
+                    <h3 id="arch-detail-title" class="text-xl font-bold text-teal-300 mb-2">Select a Component</h3>
+                    <p id="arch-detail-desc" class="text-slate-300 mb-4">Click on the architecture blocks to view specific implementation details and requirements.</p>
+                    <div id="arch-detail-tags" class="flex flex-wrap gap-2">
+                        <!-- Tags injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tech Stack Distribution Chart -->
+            <div class="mt-8 bg-white p-6 rounded-lg shadow border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Tech Stack Composition</h3>
+                <div class="chart-container">
+                    <canvas id="architectureChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: CI/CD PIPELINE -->
+        <div id="pipeline" class="section-content hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">CI/CD Pipeline Automation</h2>
+                <p class="mt-2 text-gray-600">
+                    Our goal is a "Commit-to-Cloud" automated workflow. This ensures that every line of code is tested, built, and deployed securely.
+                </p>
+            </div>
+
+            <!-- Interactive Pipeline Diagram -->
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
+                <div class="flex flex-nowrap min-w-[600px] justify-between items-center relative py-10">
+                    
+                    <!-- Step 1 -->
+                    <div class="pipeline-step flex-1 text-center group cursor-pointer pipeline-connector" onclick="showPipelineInfo('code')">
+                        <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-300 group-hover:border-teal-500 group-hover:bg-teal-50 transition-colors z-10 relative">
+                            <span class="text-2xl">💻</span>
+                        </div>
+                        <h4 class="mt-4 font-bold text-gray-800">Code & Commit</h4>
+                        <p class="text-xs text-gray-500 mt-1">Version Control</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="pipeline-step flex-1 text-center group cursor-pointer pipeline-connector" onclick="showPipelineInfo('test')">
+                        <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-300 group-hover:border-teal-500 group-hover:bg-teal-50 transition-colors z-10 relative">
+                            <span class="text-2xl">🧪</span>
+                        </div>
+                        <h4 class="mt-4 font-bold text-gray-800">Auto Test</h4>
+                        <p class="text-xs text-gray-500 mt-1">Unit & Integration</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="pipeline-step flex-1 text-center group cursor-pointer pipeline-connector" onclick="showPipelineInfo('build')">
+                        <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-300 group-hover:border-teal-500 group-hover:bg-teal-50 transition-colors z-10 relative">
+                            <span class="text-2xl">📦</span>
+                        </div>
+                        <h4 class="mt-4 font-bold text-gray-800">Build Container</h4>
+                        <p class="text-xs text-gray-500 mt-1">Dockerization</p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="pipeline-step flex-1 text-center group cursor-pointer" onclick="showPipelineInfo('deploy')">
+                        <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-300 group-hover:border-teal-500 group-hover:bg-teal-50 transition-colors z-10 relative">
+                            <span class="text-2xl">☁️</span>
+                        </div>
+                        <h4 class="mt-4 font-bold text-gray-800">Deploy</h4>
+                        <p class="text-xs text-gray-500 mt-1">Kubernetes Cluster</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Dynamic Info Box for Pipeline -->
+            <div id="pipeline-info" class="mt-6 bg-teal-50 border-l-4 border-teal-600 p-6 rounded-r-lg shadow-sm transition-all opacity-100">
+                <h3 class="text-xl font-bold text-teal-800 mb-2">Select a pipeline stage above</h3>
+                <p class="text-teal-700">Click on any step in the process flow to view specific tools, triggers, and success criteria for that stage.</p>
+            </div>
+        </div>
+
+        <!-- SECTION: QUALITY & OPS -->
+        <div id="quality" class="section-content hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">Quality Assurance & Operations</h2>
+                <p class="mt-2 text-gray-600">
+                    Maintaining operational excellence through comprehensive testing coverage (>85%), monitoring, logging, and performance optimization.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Test Coverage Chart -->
+                <div class="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col items-center">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2 w-full text-left">Test Suite Coverage Goal</h3>
+                    <div class="chart-container relative">
+                        <canvas id="qualityChart"></canvas>
+                        <!-- Center Text for Donut -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="text-center">
+                                <span class="block text-3xl font-bold text-teal-700">85%</span>
+                                <span class="text-xs text-gray-500">Target</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4 text-center">
+                        We mandate a minimum of 85% code coverage across all microservices before any merge request can be approved.
+                    </p>
+                </div>
+
+                <!-- Ops & Monitoring Checklist -->
+                <div class="bg-white p-6 rounded-lg shadow border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Operational Excellence Checklist</h3>
+                    <div class="space-y-4">
+                        <!-- Item 1 -->
+                        <div class="flex items-start p-3 bg-gray-50 rounded hover:bg-gray-100 transition">
+                            <div class="text-xl mr-3">📊</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Monitoring & Alerting</h4>
+                                <p class="text-xs text-gray-600">Real-time system health checks and incident alerting.</p>
+                            </div>
+                        </div>
+                        <!-- Item 2 -->
+                        <div class="flex items-start p-3 bg-gray-50 rounded hover:bg-gray-100 transition">
+                            <div class="text-xl mr-3">📝</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Logging Systems</h4>
+                                <p class="text-xs text-gray-600">Centralized log aggregation for debugging and audit trails.</p>
+                            </div>
+                        </div>
+                        <!-- Item 3 -->
+                        <div class="flex items-start p-3 bg-gray-50 rounded hover:bg-gray-100 transition">
+                            <div class="text-xl mr-3">⚡</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Performance Optimization</h4>
+                                <p class="text-xs text-gray-600">Database query tuning and caching strategies.</p>
+                            </div>
+                        </div>
+                        <!-- Item 4 -->
+                        <div class="flex items-start p-3 bg-gray-50 rounded hover:bg-gray-100 transition">
+                            <div class="text-xl mr-3">📚</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Documentation</h4>
+                                <p class="text-xs text-gray-600">Auto-generated OpenAPI/Swagger docs for all APIs.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Database Section -->
+            <div class="mt-8 bg-slate-50 border border-slate-200 rounded-lg p-6">
+                 <h3 class="text-lg font-semibold text-slate-800 mb-2">Database Management</h3>
+                 <p class="text-slate-600 text-sm mb-4">
+                     Robust data handling is critical. We implement automated database migrations to manage schema changes and rigorous versioning to ensure data integrity during deployments.
+                 </p>
+                 <div class="flex flex-wrap gap-2">
+                     <span class="px-3 py-1 bg-white border border-gray-300 rounded-full text-xs font-medium text-gray-700">Schema Migrations</span>
+                     <span class="px-3 py-1 bg-white border border-gray-300 rounded-full text-xs font-medium text-gray-700">Data Versioning</span>
+                     <span class="px-3 py-1 bg-white border border-gray-300 rounded-full text-xs font-medium text-gray-700">Backup Strategies</span>
+                 </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-gray-500">
+                Enterprise Application Strategy Dashboard &copy; 2023. Generated based on Technical Requirements Report.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Data & State Management ---
+        const state = {
+            currentTab: 'overview',
+            archData: {
+                microservices: {
+                    title: "Microservices Architecture",
+                    desc: "The application is split into loosely coupled services. This allows teams to develop, deploy, and scale services independently. Communication happens via lightweight APIs (REST/gRPC).",
+                    tags: ["Decoupling", "Scalability", "REST API", "gRPC"]
+                },
+                docker: {
+                    title: "Docker & Kubernetes",
+                    desc: "Services are containerized using Docker to ensure consistency across environments. Kubernetes (K8s) manages orchestration, auto-scaling, and health checks for high availability.",
+                    tags: ["Containerization", "Orchestration", "Auto-scaling", "High Availability"]
+                },
+                database: {
+                    title: "Database Strategy",
+                    desc: "We use robust migration tools (e.g., Alembic, Flyway) to manage schema changes as code. Data versioning ensures zero-downtime deployments even during schema updates.",
+                    tags: ["Migrations", "Versioning", "Integrity", "Backups"]
+                },
+                security: {
+                    title: "Security & Auth",
+                    desc: "Implementing OAuth2/OIDC for authentication. All endpoints are secured, and sensitive data is encrypted at rest and in transit. Regular security audits are integrated into the pipeline.",
+                    tags: ["OAuth2", "Encryption", "Audit Logs", "RBAC"]
+                }
+            },
+            pipelineData: {
+                code: {
+                    title: "1. Code & Commit",
+                    text: "Developers push code to the repository. Branch protection rules ensure no direct commits to main. Pull Requests require peer review.",
+                    color: "border-gray-500"
+                },
+                test: {
+                    title: "2. Automated Testing",
+                    text: "CI server triggers the test suite. Unit tests, integration tests, and static analysis run automatically. Coverage must exceed 85%.",
+                    color: "border-yellow-500"
+                },
+                build: {
+                    title: "3. Build & Containerize",
+                    text: "If tests pass, a Docker image is built. The image is tagged with the version/commit hash and pushed to the secure Container Registry.",
+                    color: "border-blue-500"
+                },
+                deploy: {
+                    title: "4. Deployment",
+                    text: "CD tools (e.g., ArgoCD) detect the new image and sync the Kubernetes cluster state. Rolling updates ensure zero downtime.",
+                    color: "border-green-500"
+                }
+            }
+        };
+
+        // --- Navigation Logic ---
+        function navTo(tabId) {
+            // Update State
+            state.currentTab = tabId;
+
+            // UI: Update Nav Buttons
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active', 'text-teal-700', 'border-b-2', 'border-teal-700');
+                el.classList.add('text-gray-500');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if(activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.classList.remove('text-gray-500');
+            }
+
+            // UI: Switch Sections
+            document.querySelectorAll('.section-content').forEach(el => el.classList.add('hidden'));
+            const activeSection = document.getElementById(tabId);
+            activeSection.classList.remove('hidden');
+
+            // Trigger chart resize/update if needed
+            if (tabId === 'architecture') {
+                renderArchChart();
+                if (archChartInstance) archChartInstance.resize();
+            }
+            if (tabId === 'quality') {
+                renderQualityChart();
+                if (qualityChartInstance) qualityChartInstance.resize();
+            }
+            
+            // Close mobile menu if open
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // --- Interaction Logic: Architecture ---
+        function updateArchDetail(key) {
+            const data = state.archData[key];
+            document.getElementById('arch-detail-title').innerText = data.title;
+            document.getElementById('arch-detail-desc').innerText = data.desc;
+            
+            const tagsContainer = document.getElementById('arch-detail-tags');
+            tagsContainer.innerHTML = '';
+            data.tags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = "px-2 py-1 bg-teal-600 text-xs rounded text-white";
+                span.innerText = tag;
+                tagsContainer.appendChild(span);
+            });
+        }
+
+        // --- Interaction Logic: Pipeline ---
+        function showPipelineInfo(step) {
+            const infoBox = document.getElementById('pipeline-info');
+            const data = state.pipelineData[step];
+            
+            infoBox.innerHTML = `
+                <h3 class="text-xl font-bold text-gray-800 mb-2">${data.title}</h3>
+                <p class="text-gray-700">${data.text}</p>
+            `;
+            // Visual feedback flash
+            infoBox.classList.remove('bg-teal-50', 'border-teal-600');
+            infoBox.classList.add('bg-white', 'border-gray-300'); // Reset briefly
+            setTimeout(() => {
+                infoBox.classList.add('bg-teal-50', 'border-teal-600');
+                infoBox.classList.remove('bg-white', 'border-gray-300');
+            }, 50);
+        }
+
+        // --- Chart Rendering ---
+        let overviewChartInstance = null;
+        let archChartInstance = null;
+        let qualityChartInstance = null;
+
+        function initCharts() {
+            // Overview Chart (Bar) - This section is visible by default
+            const ctxOverview = document.getElementById('overviewChart').getContext('2d');
+            overviewChartInstance = new Chart(ctxOverview, {
+                type: 'bar',
+                data: {
+                    labels: ['Architecture', 'Testing Setup', 'CI/CD Pipeline', 'Documentation', 'Security'],
+                    datasets: [{
+                        label: 'Estimated Effort (%)',
+                        data: [20, 25, 20, 15, 20],
+                        backgroundColor: [
+                            'rgba(15, 118, 110, 0.7)', // Teal
+                            'rgba(59, 130, 246, 0.7)', // Blue
+                            'rgba(168, 85, 247, 0.7)', // Purple
+                            'rgba(245, 158, 11, 0.7)', // Amber
+                            'rgba(239, 68, 68, 0.7)'   // Red
+                        ],
+                        borderColor: [
+                            'rgba(15, 118, 110, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(168, 85, 247, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            // Don't render other charts here - they're in hidden sections
+            // They will be rendered when their tab is first viewed
+        }
+
+        function renderArchChart() {
+            if (archChartInstance) return; // Already rendered
+            const ctx = document.getElementById('architectureChart');
+            if (!ctx) return;
+
+            archChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Backend (Python)', 'Frontend (HTML/JS)', 'Database', 'DevOps/Config'],
+                    datasets: [{
+                        data: [40, 20, 15, 25],
+                        backgroundColor: ['#0f766e', '#14b8a6', '#0e7490', '#374151']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+
+        function renderQualityChart() {
+            if (qualityChartInstance) return;
+            const ctx = document.getElementById('qualityChart');
+            if (!ctx) return;
+
+            qualityChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Covered', 'Uncovered'],
+                    datasets: [{
+                        data: [85, 15],
+                        backgroundColor: ['#10b981', '#e5e7eb'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    }
+                }
+            });
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            // Default load
+            updateArchDetail('microservices');
+            // Ensure first tab is active visually
+            navTo('overview');
+        });
+
+    </script>
+</body>
+</html>
